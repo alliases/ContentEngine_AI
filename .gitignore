@@ -1,0 +1,78 @@
+# === Security & Environments ===
+.env
+.env.local
+.env.docker
+.venv/
+venv/
+env/
+
+# === OS Specific ===
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+
+# Windows
+Thumbs.db
+Thumbs.db:encryptable
+ehthumbs.db
+ehthumbs_vista.db
+*.cab
+*.msi
+*.msm
+*.msp
+*.lnk
+Desktop.ini
+
+# Linux
+*~
+.fuse_hidden*
+.directory
+.Trash-*
+
+# === IDEs & Editors ===
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# === Python ===
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+build/
+dist/
+*.egg-info/
+
+# === Testing & Coverage ===
+.pytest_cache/
+.coverage
+htmlcov/
+coverage.xml
+
+# === Linting & Formatting ===
+.ruff_cache/
+.mypy_cache/
+.pyright_cache/
+
+# === Logs ===
+logs/
+*.log
+
+# === Databases ===
+*.sqlite3
+
+# === Project Specific ===
+collect_context.py
+collect_context.pyw
+project_context.txt
+collect_tests_context.py
+tests_context.txt
+docker-compose.override.yml
+generate_graph.py
+
+# === Uploads ===
+temp_uploads/
+coverage.json
