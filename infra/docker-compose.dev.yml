@@ -1,0 +1,53 @@
+# infra/docker-compose.dev.yml
+#version: '3.9'
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-contentengine}
+      POSTGRES_USER: ${POSTGRES_USER:-ce_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-devpassword}
+    ports:
+      # Shifted external port to 5433 to avoid collision with secure-enterprise-rag
+      - "5433:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      # Internal check still uses 5432 dynamically
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-ce_user} -d ${POSTGRES_DB:-contentengine}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  qdrant:
+    image: qdrant/qdrant:latest
+    ports:
+      - "6335:6333"
+      - "6336:6334"
+    volumes:
+      - qdrant_data:/qdrant/storage
+    healthcheck:
+      # Fix: Use /readyz endpoint instead of /health
+      test: ["CMD", "curl", "-f", "http://localhost:6333/readyz"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      # Shifted external port to 6380
+      - "6380:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+volumes:
+  postgres_data:
+  qdrant_data:
+  redis_data:
