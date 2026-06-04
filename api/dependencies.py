@@ -3,9 +3,10 @@
 import uuid
 from collections.abc import AsyncGenerator
 
+import jwt
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
-from jose import JWTError, jwt
+from jwt.exceptions import InvalidTokenError
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -34,7 +35,6 @@ async def get_current_user(
     )
 
     try:
-        # FIX: Uppercase settings attributes matching config.py
         payload = jwt.decode(
             token,
             settings.JWT_SECRET_KEY,
@@ -44,18 +44,16 @@ async def get_current_user(
         if user_id is None:
             raise credentials_exception
         token_data = TokenPayload(sub=user_id)
-    except JWTError as e:
-        # FIX (Ruff B904): Explicit exception chaining
+
+    # FIX: Use PyJWT's specific exception class
+    except InvalidTokenError as e:
         raise credentials_exception from e
 
     if not token_data.sub:
         raise credentials_exception
 
-    # FIX: Explicit UUID cast for strict type matching in Postgres
     stmt = select(User).where(User.id == uuid.UUID(token_data.sub))
     result = await db.execute(stmt)
-
-    # Now Pyright automatically knows this is `User | None` due to Mapped models
     user = result.scalar_one_or_none()
 
     if not user:
