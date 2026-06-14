@@ -121,7 +121,7 @@ indent-style = "space"
 [tool.pyright]
 include = ["api", "db", "core"]
 exclude = ["**/node_modules", "**/.*", "**/__pycache__", "build", "dist", "venv", ".venv", "collect_context.py", "collect_context.pyw", "collect_tests_context.py", "alembic/versions"]
-pythonVersion = "3.12"
+pythonVersion = "3.13"
 typeCheckingMode = "strict"
 useLibraryCodeForTypes = true
 reportMissingImports = true
