@@ -10,17 +10,17 @@ from workers.broker import broker
 
 
 @broker.task
-async def run_carousel_pipeline(carousel_id: str, tenant_id: str, task_id: str) -> dict[str, str]:
+async def run_carousel_pipeline(
+    carousel_id: str, tenant_id: str, task_id: str
+) -> dict[str, str]:
     """
     Background task to process carousel generation.
     Currently a stub that simulates work.
     LangGraph Actor-Critic integration happens in Phase 4.
     """
-    logger.info({
-        "event": "pipeline_started", 
-        "carousel_id": carousel_id, 
-        "task_id": task_id
-    })
+    logger.info(
+        {"event": "pipeline_started", "carousel_id": carousel_id, "task_id": task_id}
+    )
 
     # Simulate long-running processing time
     await asyncio.sleep(5)
@@ -45,10 +45,8 @@ async def run_carousel_pipeline(carousel_id: str, tenant_id: str, task_id: str) 
 
         await session.commit()
 
-    logger.info({
-        "event": "pipeline_finished", 
-        "carousel_id": carousel_id, 
-        "task_id": task_id
-    })
-    
+    logger.info(
+        {"event": "pipeline_finished", "carousel_id": carousel_id, "task_id": task_id}
+    )
+
     return {"status": "success", "task_id": task_id}
