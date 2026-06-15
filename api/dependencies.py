@@ -15,7 +15,7 @@ from api.schemas.auth import TokenPayload
 from db.models import User
 from db.session import async_session_maker
 
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/auth/token")
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="api/v1/auth/token")
 
 
 async def get_db_session() -> AsyncGenerator[AsyncSession]:
