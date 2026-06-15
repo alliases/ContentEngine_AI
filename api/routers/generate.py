@@ -9,6 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from api.dependencies import get_current_tenant, get_db_session
 from api.schemas.content import GenerateRequest, GenerateResponse
 from db.models import Carousel, Task
+from workers.tasks import run_carousel_pipeline
 
 router = APIRouter(prefix="/generate", tags=["Generation"])
 
@@ -28,7 +29,9 @@ async def generate_carousel(
     await db.flush()  # Flush to get new_carousel.id
 
     # 2. Create Background Task entry
-    new_task = Task(carousel_id=new_carousel.id, status="PROCESSING")
+    new_task = Task(
+        tenant_id=uuid.UUID(tenant_id), carousel_id=new_carousel.id, status="PROCESSING"
+    )
     db.add(new_task)
     await db.commit()
 
@@ -41,6 +44,9 @@ async def generate_carousel(
         }
     )
 
-    # Taskiq invocation will go here in Step 2.4
+    # Send task to Redis queue via Taskiq
+    await run_carousel_pipeline.kiq(
+        carousel_id=str(new_carousel.id), tenant_id=tenant_id, task_id=str(new_task.id)
+    )
 
     return GenerateResponse(task_id=new_task.id, status="processing")

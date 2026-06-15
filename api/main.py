@@ -6,22 +6,31 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from loguru import logger
 
-from api.routers import auth, carousels, generate
+from api.routers import auth, carousels, generate, tasks
 from db.session import engine
+from workers.broker import broker
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncGenerator[None]:
     logger.info("Starting up FastAPI and DB pool...")
-    # Future scope: add async DB ping/healthcheck here
+
+    # Prevent recursion: start broker only if running via Uvicorn, not Taskiq worker
+    if not broker.is_worker_process:
+        await broker.startup()
+        logger.info("Taskiq broker started successfully.")
+
     yield
 
-    logger.info("Shutting down DB pool...")
+    logger.info("Shutting down Taskiq broker and DB pool...")
+
+    if not broker.is_worker_process:
+        await broker.shutdown()
+
     try:
         await engine.dispose()
         logger.info("DB pool shut down successfully.")
     except Exception as e:
-        # Do not expose raw traceback to potential external logging streams directly without formatting
         logger.error(f"Error during DB pool shutdown: {e!s}")
 
 
@@ -46,3 +55,4 @@ async def health_check() -> dict[str, str]:
 app.include_router(auth.router, prefix="/api/v1")
 app.include_router(carousels.router, prefix="/api/v1")
 app.include_router(generate.router, prefix="/api/v1")
+app.include_router(tasks.router, prefix="/api/v1")

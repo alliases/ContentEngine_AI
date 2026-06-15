@@ -3,6 +3,7 @@
 
 services:
   postgres:
+    container_name: contentengine-postgres
     image: postgres:16-alpine
     environment:
       POSTGRES_DB: ${POSTGRES_DB:-contentengine}
@@ -21,6 +22,7 @@ services:
       retries: 5
 
   qdrant:
+    container_name: contentengine-qdrant
     image: qdrant/qdrant:latest
     ports:
       - "6335:6333"
@@ -34,6 +36,7 @@ services:
       retries: 3
 
   redis:
+    container_name: contentengine-redis
     image: redis:7-alpine
     ports:
       # Shifted external port to 6380
