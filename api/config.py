@@ -10,8 +10,14 @@ class Settings(BaseSettings):
     POSTGRES_DB: str
     POSTGRES_PORT: int = 5433
     POSTGRES_HOST: str = "localhost"
+
     # Redis Settings
     REDIS_PORT: int = 6380
+
+    # Qdrant Settings (Added and properly typed)
+    QDRANT_HOST: str = "localhost"
+    QDRANT_PORT: int = 6333
+
     # JWT Security Settings
     JWT_SECRET_KEY: str = Field(...)
     JWT_ALGORITHM: str = "HS256"
