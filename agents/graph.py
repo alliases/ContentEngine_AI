@@ -5,6 +5,7 @@ from langgraph.graph import END, StateGraph  # type: ignore[import-untyped]
 from loguru import logger
 
 from agents.state import CarouselState
+from agents.writer import WriterAgent
 
 
 # --- Dummy Nodes (To be implemented in subsequent steps) ---
@@ -34,7 +35,41 @@ async def writer_node(state: CarouselState) -> dict[str, Any]:
             "carousel_id": state["carousel_id"],
         }
     )
-    return {"status": "REVIEWING"}
+
+    news = state.get("raw_news")
+    context = state.get("rag_context")
+
+    if not news or not context:
+        logger.error(
+            {
+                "event": "writer_missing_context",
+                "carousel_id": state["carousel_id"],
+                "has_news": bool(news),
+                "has_context": bool(context),
+            }
+        )
+        return {
+            "error_message": "Missing news or context for writing",
+            "status": "FALLBACK",
+        }
+
+    writer = WriterAgent()
+
+    try:
+        # Use the news title as the guiding topic for generation
+        slides = await writer.generate(topic=news.title, news=news, context=context)
+        return {"draft_slides": slides, "status": "REVIEWING"}
+
+    except Exception as e:
+        logger.error(
+            {
+                "event": "writer_node_failed_irrecoverably",
+                "carousel_id": state["carousel_id"],
+                "error": str(e),
+            }
+        )
+        # Fallback to manual review if LLM fails after all retries
+        return {"error_message": f"Writer failed: {e}", "status": "FALLBACK"}
 
 
 async def reviewer_node(state: CarouselState) -> dict[str, Any]:

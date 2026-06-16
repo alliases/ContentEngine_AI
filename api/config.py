@@ -1,6 +1,6 @@
 # api/config.py
 
-from pydantic import Field
+from pydantic import Field, SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -17,6 +17,9 @@ class Settings(BaseSettings):
     # Qdrant Settings (Added and properly typed)
     QDRANT_HOST: str = "localhost"
     QDRANT_PORT: int = 6333
+
+    # AI/LLM Settings
+    OPENAI_API_KEY: SecretStr = Field(default=SecretStr(""))
 
     # JWT Security Settings
     JWT_SECRET_KEY: str = Field(...)
