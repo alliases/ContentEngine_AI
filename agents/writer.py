@@ -4,10 +4,19 @@ from typing import Any, cast
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_openai import ChatOpenAI
 from loguru import logger
+from pydantic import BaseModel, Field
 from tenacity import RetryCallState, retry, stop_after_attempt, wait_exponential
 
 from agents.state import FewShotContext, RawNewsItem, SlideContent
 from api.config import settings
+
+
+class SlideDeck(BaseModel):
+    """Wrapper model to satisfy LangChain/OpenAI structured output requirements."""
+
+    slides: list[SlideContent] = Field(
+        description="The sequence of slides making up the carousel."
+    )
 
 
 def log_retry(retry_state: RetryCallState) -> None:
@@ -36,7 +45,7 @@ class WriterAgent:
             temperature=0.7,
             api_key=settings.OPENAI_API_KEY,
         )
-        self.llm: Any = llm.with_structured_output(list[SlideContent])  # type: ignore[reportUnknownMemberType]
+        self.llm: Any = llm.with_structured_output(SlideDeck)  # type: ignore[reportUnknownMemberType]
 
         self.prompt = ChatPromptTemplate.from_messages(
             [
@@ -81,7 +90,7 @@ class WriterAgent:
         chain: Any = self.prompt | self.llm
 
         # Await the async invocation to prevent event loop blocking
-        raw_slides = await chain.ainvoke(
+        raw_deck = await chain.ainvoke(
             {
                 "brand_voice": context.brand_voice_summary,
                 "examples": examples_str,
@@ -90,8 +99,9 @@ class WriterAgent:
             }
         )
 
-        # Enforce strict type bounding for Pylance
-        slides = cast(list[SlideContent], raw_slides)
+        # Enforce strict type bounding for Pylance and extract the list
+        deck = cast(SlideDeck, raw_deck)
+        slides = deck.slides
 
         logger.info(
             {
