@@ -53,7 +53,12 @@ class StyleRetriever:
         self, query_text: str, tenant_id: str, top_k: int = 3
     ) -> list[str]:
         """Retrieves similar posts strictly isolated by tenant_id."""
-        if not tenant_id.isalnum():
+        import uuid
+
+        try:
+            # Hotfix: Validate proper UUID format allowing hyphens
+            uuid.UUID(tenant_id)
+        except ValueError:
             logger.error(
                 {"event": "malicious_tenant_id_detected", "tenant_id": tenant_id}
             )
