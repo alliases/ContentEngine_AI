@@ -7,7 +7,7 @@ from loguru import logger
 from pydantic import BaseModel, Field
 from tenacity import RetryCallState, retry, stop_after_attempt, wait_exponential
 
-from agents.state import FewShotContext, RawNewsItem, SlideContent
+from agents.state import FeedbackModel, FewShotContext, RawNewsItem, SlideContent
 from api.config import settings
 
 
@@ -61,6 +61,8 @@ class WriterAgent:
                     - Slides 2 to N-1: Core body (one distinct idea per slide, 3-5 lines max).
                     - Final Slide: CTA (Call to action).
 
+                    {revision_context}
+
                     For keywords, wrap them exactly in <keyword> tags. Example: We leverage <keyword>AI automation</keyword> to scale.
                     Ensure char_count accurately reflects the length of the body_text.
                     Output STRICTLY as the requested JSON schema.""",
@@ -75,10 +77,16 @@ class WriterAgent:
         before_sleep=log_retry,
     )
     async def generate(
-        self, topic: str, news: RawNewsItem, context: FewShotContext
+        self,
+        topic: str,
+        news: RawNewsItem,
+        context: FewShotContext,
+        draft_slides: list[SlideContent] | None = None,
+        feedback: FeedbackModel | None = None,
     ) -> list[SlideContent]:
         """
         Executes the prompt against the LLM.
+        Operates in 'creation' mode or 'edit' mode depending on provided feedback.
         Retries up to 3 times on API or parsing failures.
         """
         examples_str = (
@@ -86,6 +94,28 @@ class WriterAgent:
             if context.examples
             else "No specific examples provided."
         )
+
+        # Determine if we are in Edit Mode based on feedback
+        revision_context = ""
+        if draft_slides and feedback:
+            slides_text = "\n".join(
+                [
+                    f"Slide {s.position}: {s.title or 'No Title'} - {s.body_text}"
+                    for s in draft_slides
+                ]
+            )
+            revision_context = f"""
+            CRITICAL INSTRUCTION: YOU ARE IN EDIT MODE.
+            The Reviewer Agent rejected the previous draft. You MUST fix the issues below.
+
+            PREVIOUS DRAFT:
+            {slides_text}
+
+            REVIEWER FEEDBACK (REVISION INSTRUCTIONS):
+            {feedback.revision_instructions}
+
+            Apply these corrections precisely while maintaining the overall structure.
+            """
 
         chain: Any = self.prompt | self.llm
 
@@ -96,6 +126,7 @@ class WriterAgent:
                 "examples": examples_str,
                 "topic": topic,
                 "news_text": news.text,
+                "revision_context": revision_context,
             }
         )
 
@@ -107,6 +138,7 @@ class WriterAgent:
             {
                 "event": "writer_generation_success",
                 "slides_generated": len(slides),
+                "is_revision": bool(revision_context),
                 "topic": topic,
             }
         )

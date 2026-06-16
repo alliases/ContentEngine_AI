@@ -57,14 +57,13 @@ async def run_verification() -> None:
         "tenant_id": str(uuid.uuid4()),
         "raw_news": mock_news,
         "rag_context": context,
-        "draft_slides": bad_slides,
+        "draft_slides": [slide.model_dump() for slide in bad_slides],
         "feedback": None,
         "iteration_count": 0,
         "status": "REVIEWING",
         "error_message": None,
     }
 
-    # CRITICAL: thread_id required for MemorySaver
     # CRITICAL: thread_id required for MemorySaver
     # Explicitly type as RunnableConfig to satisfy Pylance
     config: RunnableConfig = {"configurable": {"thread_id": "test_thread"}}

@@ -1,7 +1,7 @@
 # agents/state.py
 
 from datetime import datetime
-from typing import Literal, TypedDict
+from typing import Any, Literal, TypedDict
 
 from pydantic import BaseModel
 
@@ -48,7 +48,8 @@ class CarouselState(TypedDict):
     tenant_id: str
     raw_news: RawNewsItem | None
     rag_context: FewShotContext | None
-    draft_slides: list[SlideContent] | None
+    # CRITICAL: Use list[dict] instead of list[SlideContent] for safe checkpointer serialization
+    draft_slides: list[dict[str, Any]] | None
     feedback: FeedbackModel | None
     iteration_count: int  # CRITICAL: Ensures Actor-Critic loop terminates
     status: Literal[

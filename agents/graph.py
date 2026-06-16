@@ -6,7 +6,7 @@ from langgraph.graph import END, StateGraph  # type: ignore[import-untyped]
 from loguru import logger
 
 from agents.reviewer import ReviewerAgent
-from agents.state import CarouselState
+from agents.state import CarouselState, FeedbackModel, SlideContent
 from agents.writer import WriterAgent
 
 
@@ -40,7 +40,11 @@ async def writer_node(state: CarouselState) -> dict[str, Any]:
 
     news = state.get("raw_news")
     context = state.get("rag_context")
+    raw_drafts = state.get("draft_slides")
 
+    # CRITICAL: Deserialize feedback dict to Pydantic Model
+    raw_feedback = state.get("feedback")
+    feedback = FeedbackModel.model_validate(raw_feedback) if raw_feedback else None
     if not news or not context:
         logger.error(
             {
@@ -55,12 +59,25 @@ async def writer_node(state: CarouselState) -> dict[str, Any]:
             "status": "FALLBACK",
         }
 
+    # CRITICAL: Convert dicts back to Pydantic models for the Agent
+    draft_slides = (
+        [SlideContent.model_validate(slide) for slide in raw_drafts]
+        if raw_drafts
+        else None
+    )
     writer = WriterAgent()
 
     try:
-        # Use the news title as the guiding topic for generation
-        slides = await writer.generate(topic=news.title, news=news, context=context)
-        return {"draft_slides": slides, "status": "REVIEWING"}
+        slides = await writer.generate(
+            topic=news.title,
+            news=news,
+            context=context,
+            draft_slides=draft_slides,
+            feedback=feedback,
+        )
+        # CRITICAL: Serialize Pydantic models back to dicts for safe checkpointing
+        serialized_slides = [slide.model_dump() for slide in slides]
+        return {"draft_slides": serialized_slides, "status": "REVIEWING"}
 
     except Exception as e:
         logger.error(
@@ -83,13 +100,13 @@ async def reviewer_node(state: CarouselState) -> dict[str, Any]:
         }
     )
 
-    slides = state.get("draft_slides")
+    raw_slides = state.get("draft_slides")
     context = state.get("rag_context")
 
     # Increment iteration counter strictly to maintain Invariant 2
     new_count = state.get("iteration_count", 0) + 1
 
-    if not slides or not context:
+    if not raw_slides or not context:
         logger.error(
             {"event": "reviewer_missing_data", "carousel_id": state["carousel_id"]}
         )
@@ -99,12 +116,14 @@ async def reviewer_node(state: CarouselState) -> dict[str, Any]:
             "iteration_count": new_count,
         }
 
+    # CRITICAL: Convert dicts back to Pydantic models
+    slides = [SlideContent(**slide) for slide in raw_slides]
     reviewer = ReviewerAgent()
 
     try:
         feedback = await reviewer.review(slides, context)
         return {
-            "feedback": feedback,
+            "feedback": feedback.model_dump(),
             "iteration_count": new_count,
             "status": "APPROVED_BY_AI"
             if feedback.overall_status == "APPROVED"
