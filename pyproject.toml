@@ -60,6 +60,7 @@ loguru = "^0.7.3"
 taskiq = "^0.12.4"
 taskiq-redis = "^1.2.2"
 taskiq-fastapi = "^0.5.0"
+feedparser = "^6.0.12"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^8.3.0"
