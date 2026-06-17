@@ -51,6 +51,7 @@ class CarouselState(TypedDict):
     # CRITICAL: Use list[dict] instead of list[SlideContent] for safe checkpointer serialization
     draft_slides: list[dict[str, Any]] | None
     feedback: FeedbackModel | None
+    render_result: dict[str, Any] | None
     iteration_count: int  # CRITICAL: Ensures Actor-Critic loop terminates
     status: Literal[
         "WRITING",

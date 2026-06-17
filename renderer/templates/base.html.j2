@@ -1,0 +1,63 @@
+# renderer/templates/base.html.j2
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Slide Base</title>
+  <script src="https://unpkg.com/fitty@2/dist/fitty.min.js"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap');
+
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: 'Inter', sans-serif;
+      background: #ffffff;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .slide {
+      width: 1080px;
+      height: 1080px;
+      box-sizing: border-box;
+      padding: 80px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      position: relative;
+      page-break-after: always; /* Crucial for multi-page PDF */
+      overflow: hidden;
+    }
+
+    .keyword {
+      color: #2563eb; /* Brand primary color */
+      font-weight: 800;
+    }
+
+    .slide-number {
+      position: absolute;
+      bottom: 40px;
+      right: 40px;
+      font-size: 24px;
+      color: #9ca3af;
+      font-weight: 600;
+    }
+  </style>
+  {% block extra_css %}{% endblock %}
+</head>
+<body>
+  {% block content %}{% endblock %}
+  <script>
+    // Invariant 3: Ensure rendering is fully complete
+    document.fonts.ready.then(() => {
+        // Apply dynamic font scaling
+        fitty('.fit-text', { minSize: 24, maxSize: 80 });
+
+        // Ensure the browser event loop processes layout changes
+        setTimeout(() => {
+            window.__RENDER_COMPLETE__ = true;
+        }, 150);
+    });
+  </script>
+</body>
+</html>

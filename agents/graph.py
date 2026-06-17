@@ -8,6 +8,7 @@ from loguru import logger
 from agents.reviewer import ReviewerAgent
 from agents.state import CarouselState, FeedbackModel, SlideContent
 from agents.writer import WriterAgent
+from renderer.engine import render_carousel
 
 
 # --- Dummy Nodes (To be implemented in subsequent steps) ---
@@ -146,7 +147,40 @@ async def designer_node(state: CarouselState) -> dict[str, Any]:
             "carousel_id": state["carousel_id"],
         }
     )
-    return {"status": "RENDERING"}
+
+    raw_slides = state.get("draft_slides")
+    if not raw_slides:
+        logger.error(
+            {"event": "designer_missing_slides", "carousel_id": state["carousel_id"]}
+        )
+        return {
+            "error_message": "No draft slides available for rendering",
+            "status": "FALLBACK",
+        }
+
+    # Rehydrate Pydantic models from checkpointer state
+    slides = [SlideContent.model_validate(slide) for slide in raw_slides]
+
+    try:
+        result = await render_carousel(
+            slides=slides,
+            tenant_id=state["tenant_id"],
+            carousel_id=state["carousel_id"],
+        )
+        # Serialize Pydantic model to plain dict for safe Postgres checkpointing
+        return {
+            "render_result": result.model_dump(),
+            "status": "RENDERING",
+        }
+    except Exception as e:
+        logger.error(
+            {
+                "event": "designer_failed_irrecoverably",
+                "carousel_id": state["carousel_id"],
+                "error": str(e),
+            }
+        )
+        return {"error_message": f"Renderer engine failed: {e}", "status": "FALLBACK"}
 
 
 # --- Conditional Routing Logic ---

@@ -1,0 +1,15 @@
+# renderer/templates/slide.html.j2
+{% extends "base.html.j2" %}
+{% block content %}
+<div class="slide">
+  {% if slide.title %}
+  <h1 style="font-size: 56px; color: #111827; margin-bottom: 40px; line-height: 1.2;">
+    {{ slide.title }}
+  </h1>
+  {% endif %}
+  <div class="fit-text" style="width: 100%; font-weight: 600; color: #374151; line-height: 1.4;">
+    {{ body_html | safe }}
+  </div>
+  <div class="slide-number">{{ slide.position }}</div>
+</div>
+{% endblock %}

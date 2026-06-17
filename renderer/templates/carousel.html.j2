@@ -1,0 +1,17 @@
+# renderer/templates/carousel.html.j2
+{% extends "base.html.j2" %}
+{% block content %}
+  {% for slide_data in slides_data %}
+  <div class="slide">
+    {% if slide_data.slide.title %}
+    <h1 style="font-size: 56px; color: #111827; margin-bottom: 40px; line-height: 1.2;">
+      {{ slide_data.slide.title }}
+    </h1>
+    {% endif %}
+    <div class="fit-text" style="width: 100%; font-weight: 600; color: #374151; line-height: 1.4;">
+      {{ slide_data.body_html | safe }}
+    </div>
+    <div class="slide-number">{{ slide_data.slide.position }}</div>
+  </div>
+  {% endfor %}
+{% endblock %}

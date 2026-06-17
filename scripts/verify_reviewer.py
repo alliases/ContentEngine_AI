@@ -59,6 +59,7 @@ async def run_verification() -> None:
         "rag_context": context,
         "draft_slides": [slide.model_dump() for slide in bad_slides],
         "feedback": None,
+        "render_result": None,
         "iteration_count": 0,
         "status": "REVIEWING",
         "error_message": None,
