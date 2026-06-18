@@ -76,3 +76,29 @@ generate_graph.py
 # === Uploads ===
 temp_uploads/
 coverage.json
+
+#ui
+ui/node_modules/
+ui/.next/
+
+# === Storage & Generated Media ===
+# Ignoring all slides and PDF
+storage/
+# Якщо хочеш, щоб пуста папка storage все ж потрапила в Git, розкоментуй рядок нижче:
+!storage/.gitkeep
+
+# === UI / Frontend Additions ===
+ui/.eslintcache
+ui/out/
+ui/build/
+ui/.turbo/
+
+# === Playwright Reports ===
+test-results/
+playwright-report/
+blob-report/
+playwright/.cache/
+
+# === Infrastructure ===
+# dumps local base Redis
+dump.rdb

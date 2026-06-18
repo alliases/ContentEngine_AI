@@ -4,6 +4,7 @@ import uuid
 from collections.abc import AsyncGenerator
 
 import jwt
+import redis.asyncio as redis
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from jwt.exceptions import InvalidTokenError
@@ -16,6 +17,19 @@ from db.models import User
 from db.session import async_session_maker
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="api/v1/auth/token")
+
+
+async def get_redis_client() -> AsyncGenerator[redis.Redis]:
+    """Dependency to provide async Redis client with connection pooling."""
+    client = redis.Redis(
+        host=settings.REDIS_HOST if hasattr(settings, "REDIS_HOST") else "localhost",
+        port=settings.REDIS_PORT,
+        decode_responses=True,
+    )
+    try:
+        yield client
+    finally:
+        await client.aclose()
 
 
 async def get_db_session() -> AsyncGenerator[AsyncSession]:

@@ -24,12 +24,17 @@ async def login_access_token(
     db: AsyncSession = Depends(get_db_session),
 ) -> Token:
     """OAuth2 compatible token login. Issues access token."""
-    stmt = select(User).where(User.email == form_data.username)
+
+    # Security check: Sanitize email to prevent Log Injection (CRLF) CWE-117
+    # Also prevents log spam if a user accidentally pastes a large block of text or their password
+    safe_email = form_data.username.replace("\n", "").replace("\r", "")[:255]
+
+    stmt = select(User).where(User.email == safe_email)
     result = await db.execute(stmt)
     user = result.scalar_one_or_none()
 
     if not user or not verify_password(form_data.password, str(user.hashed_password)):
-        logger.warning(f"Failed login attempt for email: {form_data.username}")
+        logger.warning(f"Failed login attempt for email: {safe_email}")
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Incorrect email or password",
